@@ -17,17 +17,15 @@ $ [sudo] npm install -g colony
 Usage: colony {files} --npm {modules}
 
 Options:
-  -o, --outdir   Output files to a particular folder
-  -m, --modules  Traverse node_modules for more code.
-                 Use --no-modules to disable.
-  -s, --scale    Scales the output graph by a specific size.
-  -n, --npm      Download and process an NPM module instead of a local file.           
-  -t, --title    Give the source file nodes a custom title                             
-  -r, --readme   Readme file. By default will try to guess the first file's
-                 readme.
-  -j, --json     Output the module data as JSON, instead of generating and
-                 writing HTML
-  -h, --help     Display this message 
+  -o, --outdir   Output files to a particular folder                                     [default: "./colony"]
+  -m, --modules  Traverse node_modules for more code. Use --no-modules to disable.       [default: true]
+  -s, --scale    Scales the output graph by a specific size.                             [default: 1]
+  -n, --npm      Download and process an NPM module instead of a local file.
+  -t, --title    Change the title of the page
+  -r, --readme   Readme file. By default will try to guess the first file's readme.
+  -j, --json     Output the scripts' data as JSON, instead of generating and writing HTML
+  -f, --fork     "Fork me on Github" button, e.g. "hughsk/colony". Hidden by default.
+  -h, --help     Display this message
 ```
 
 The simplest way to use `colony` from the command-line would be:
