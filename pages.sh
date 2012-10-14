@@ -5,8 +5,7 @@
 # Dependcies: `awk` and `git`, must be run on a Unix system.
 
 npm run-script prepublish
-rm -rf gh-pages
-bin/colony ./index.js ./src/index.js -o gh-pages -r instructions.md -f hughsk/colony || exit 1
+npm run-script pages
 git rm -r --cached gh-pages
 git add gh-pages
 git commit -m 'Update gh-pages branch'

@@ -1,7 +1,7 @@
 # colony
 
 Colony is a neat little visualisation tool for exploring Node projects and
-their dependencies.
+their dependencies using [d3.js](http://d3js.org).
 
 Each file is represented as a node in the graph. If one file depends on another,
 a link is made between the two files.
@@ -10,9 +10,9 @@ Each file is coloured based on the module they belong to. By hovering over a nod
 you can see the file's name, the files it depends on (light), and the files that
 depend on it (dark).
 
-The `colony` demo is a visualisation of its own code and dependencies, but you
-can use the command-line tool to apply it to almost any NPM module or collection
-of CommonJS files. Check out [the repository](http://github.com/hughsk/colony)
+This demo is a visualisation of `colony`'s own code and dependencies, but you
+can use the command-line tool to apply it to almost any NPM module or CommonJS
+project. Check out [the repository](http://github.com/hughsk/colony)
 on Github for more information.
 
 ## Usage

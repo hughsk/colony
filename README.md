@@ -1,7 +1,7 @@
 # colony
 
-In-browser graphs representing the links between your code and its
-dependencies. Built for Node, but should work cleanly with CommonJS in general.
+In-browser graphs representing the links between your Node.js code and its
+dependencies.
 
 ![Colony](http://hughsk.github.com/colony/img/screenshot-semi.png)
 
@@ -36,7 +36,9 @@ $ colony app.js -o colony
 
 This will traverse `app.js`'s dependencies and dump the necessary static
 HTML/CSS/JS files to the `./colony` directory, this page being
-`./colony/index.html`.
+`./colony/index.html`. Then it's just a matter of serving it up using something
+like [serve](http://npm.im/serve), [NGINX](http://nginx.org) or plain old 
+[Apache](http://apache.org/).
 
 For convenience, you can download and visualise any combination of NPM modules
 too:
