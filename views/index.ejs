@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!--[if lt IE 8]>      <html class="lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class=""> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <title><%= 'undefined' !== typeof title ? title : 'colony' %></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=400, initial-scale=1">
+
+        <link href='./css/normalize.css' rel='stylesheet' type='text/css'>
+        <link href='./css/colony.css' rel='stylesheet' type='text/css'>
+        <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600,300italic|Source+Code+Pro:400' rel='stylesheet' type='text/css'>
+    </head>
+    <body>
+        <div id="wrapper">
+            <div id="main" role="main">
+                <div id="colony"></div>
+                <div id="readme">
+                    <div id="readme-contents">
+                        <%- readme %>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% if (fork) { %>
+            <a href="https://github.com/<%= fork %>"><img style="position: absolute; top: 0; right: 0; border: 0; z-index: 3;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+        <% } %>
+<!-- File Data and Javascript -->
+<script type="text/javascript">
+window.colony = <%- JSON.stringify(files) %>;
+</script>
+<script type="text/javascript" src="./js/colony.min.js"></script>
+
+    </body>
+</html>

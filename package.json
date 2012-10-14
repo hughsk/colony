@@ -1,0 +1,47 @@
+{
+  "name": "colony",
+  "version": "0.0.1",
+  "main": "index.js",
+  "bin": {
+    "colony": "bin/colony"
+  },
+  "scripts": {
+    "test": "echo \"Sorry, no tests as of yet!\" && exit 1",
+    "prepublish": "mkdir -p public/js; npm run-script browserify && npm run-script minify",
+    "browserify": "node_modules/.bin/browserify src/index.js -o public/js/colony.js",
+    "minify": "node_modules/.bin/uglifyjs public/js/colony.js > public/js/colony.min.js"
+  },
+  "license": "BSD",
+  "description": "ERROR: No README.md file found!",
+  "dependencies": {
+    "ejs": "~0.8.3",
+    "marked": "~0.2.5",
+    "reqursive": "0.0.5",
+    "highlight.js": "~7.2.0",
+    "async": "~0.1.22",
+    "mkdirp": "~0.3.4",
+    "optimist": "~0.3.4",
+    "wrench": "~1.3.9",
+    "mousetrap": "0.0.1"
+  },
+  "devDependencies": {
+    "debounce": "0.0.1",
+    "d3": "~2.10.1",
+    "browserify": "~1.16.1",
+    "uglify-js": "~1.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hughsk/colony.git"
+  },
+  "keywords": [
+    "code",
+    "visualisation",
+    "require",
+    "recursive",
+    "structure",
+    "codebase",
+    "visualization"
+  ],
+  "author": "Hugh Kennedy <hughskennedy@gmail.com> (http://hughskennedy.com/)"
+}

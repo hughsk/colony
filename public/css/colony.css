@@ -1,0 +1,133 @@
+body {
+    background-color:#252929;
+    margin:0; padding:0;
+    overflow:hidden;
+
+    font-weight: 300;
+    font-family: 'Source Sans Pro',
+                 'Helvetica Neue',
+                  Helvetica,
+                  Arial,
+                  sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 300;
+    color:#333;
+}
+
+h1 {
+    margin-top: 0;
+    border-bottom:1px dotted #252929;
+    padding-bottom:0.3em;
+    margin-bottom:0.3em;
+}
+
+a {
+    font-weight:bold;
+    color:#4271AE;
+    text-decoration:none;
+}
+
+code, pre {
+    font-family: 'Source Code Pro',
+                 'Monaco',
+                 'Ubuntu Mono',
+                 'Courier New',
+                  Courier,
+                  monospace;
+}
+
+code {
+    font-size:12px;
+    line-height:0.95em;
+}
+
+code .literal,
+code .number  { color:#F5871F; }
+code .string  { color:#849D04; }
+code .params  { color:#C9B002; }
+code .regexp  { color:#C83C3D; }
+code .comment { color:#999999; }
+code .keyword { color:#8959A8; }
+code .title   { color:#4271AE; }
+
+.node {
+    cursor:pointer;
+}
+
+.nodetext {
+    fill:#E1FAFA;
+    font-size:14px;
+}
+.nodetext.shadow {
+    fill:#252929;
+}
+
+#colony {
+    border-right:1px solid #000;
+    position:relative;
+    z-index:1;
+}
+
+#readme {
+    position:absolute;
+    z-index:2;
+    top: 0; right: 0;
+    width: 50%;
+    height: 100%;
+    min-width: 400px;
+    box-sizing: border-box;
+    overflow: scroll;
+    overflow-x: hidden;
+    overflow-y: scroll;
+
+    -webkit-transition: width 0.5s;
+       -moz-transition: width 0.5s;
+        -ms-transition: width 0.5s;
+         -o-transition: width 0.5s;
+            transition: width 0.5s;
+}
+
+#readme.enlarged {
+    width:100%;
+}
+.enlarged #readme-contents {
+    margin-left:2em;
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+#readme-contents {
+    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.89);
+    color:#555959;
+
+    padding: 2em;
+    margin: 2em;
+    margin-left:0;
+
+    line-height: 1.65em;
+
+    -webkit-transition: background-color 0.5s, margin 0.5s;
+       -moz-transition: background-color 0.5s, margin 0.5s;
+        -ms-transition: background-color 0.5s, margin 0.5s;
+         -o-transition: background-color 0.5s, margin 0.5s;
+            transition: background-color 0.5s, margin 0.5s;
+}
+#readme-contents.showing-code {
+    color:#252929;
+}
+
+#readme-contents img {
+  max-width:100%;
+}
+
+.showing-code pre {
+    margin:0;
+    width:100%;
+    white-space: pre;
+}
+
+.showing-code pre > code {
+    font-size:11px;
+}

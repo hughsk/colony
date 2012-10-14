@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+
+var colony = require('../index')
+  , optimist = require('optimist')(process.argv.slice(2))
+
+optimist
+    .usage('Usage: $0 {files} --npm {modules}')
+
+    .alias('o', 'outdir')
+    .describe('o', 'Output files to a particular folder')
+    .default('o', './colony')
+
+    .alias('m', 'modules')
+    .describe('m', 'Traverse node_modules for more code. Use --no-modules to disable.')
+    .default('m', true)
+
+    .alias('s', 'scale')
+    .describe('s', 'Scales the output graph by a specific size.')
+    .default('s', 1)
+
+    .alias('n', 'npm')
+    .describe('n', 'Download and process an NPM module instead of a local file.')
+
+    .alias('t', 'title')
+    .describe('t', 'Give the source file nodes a custom title')
+
+    .alias('r', 'readme')
+    .describe('r', 'Readme file. By default will try to guess the first file\'s readme.')
+
+    .alias('j', 'json')
+    .describe('j', 'Output the module data as JSON, instead of generating and writing HTML')
+
+    .alias('f', 'fork')
+    .describe('f', '"Fork me on Github" button, e.g. "hughsk/colony". Hidden by default.')
+
+    .alias('h', 'help')
+    .describe('h', 'Display this message')
+
+var argv =  optimist.argv
+
+if ((!argv._.length && !argv.npm) || argv.help) {
+    return optimist.showHelp()
+}
+
+if (argv.json) {
+    return colony.generate(argv._, {
+        traverseModules: argv.modules
+    }, function (err, res) {
+        if (err) throw err
+
+        return console.log(JSON.stringify(res.data))
+    })
+}
+
+var opts = {
+      readme: argv.readme
+    , title: argv.title
+    , scale: argv.scale
+    , directory: argv.outdir
+    , traverseModules: argv.modules
+    , fork: argv.fork
+}
+
+if (argv.npm) {
+    argv.npm = Array.isArray(argv.npm) ? argv.npm : [argv.npm]
+
+    opts.others = argv._ || []
+
+    return colony.npm(argv.npm, opts, finished)
+} else
+if (argv._.length) {
+    return colony.build(argv._, opts, finished)
+} else {
+    return optimist.showHelp()
+}
+
+function finished(err) {
+    if (err) throw err
+    console.error('Done!')
+};
