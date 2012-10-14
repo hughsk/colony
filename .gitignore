@@ -1,7 +1,0 @@
-.DS_Store
-
-/colony
-/node_modules
-
-public/js/colony.js
-public/js/colony.min.js
