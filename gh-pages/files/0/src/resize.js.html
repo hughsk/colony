@@ -1,0 +1,13 @@
+<h1>resize.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> resize = module.exports = <span class="keyword">function</span>(handler) {
+    <span class="keyword">var</span> original = window.onresize || <span class="function"><span class="keyword">function</span> <span class="params">()</span>{</span>
+        <span class="keyword">return</span> <span class="literal">true</span>
+    };
+
+    window.onresize = <span class="keyword">function</span>() {
+        <span class="keyword">var</span> args = Array.prototype.slice.call(arguments)
+
+        <span class="keyword">return</span> handler.apply(<span class="keyword">this</span>, args) !== <span class="literal">false</span> &amp;&amp;
+              original.apply(<span class="keyword">this</span>, args)
+    };
+};</code></pre>

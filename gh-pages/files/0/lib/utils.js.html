@@ -1,0 +1,78 @@
+<h1>utils.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> path = require(<span class="string">'path'</span>)
+  , wrench = require(<span class="string">'wrench'</span>)
+  , fs = require(<span class="string">'fs'</span>)
+
+<span class="keyword">var</span> utils = module.exports = {}
+
+utils.safemkdirp = <span class="keyword">function</span>(dir) {
+    <span class="keyword">try</span> {
+        wrench.mkdirSyncRecursive(dir)
+    } <span class="keyword">catch</span>(e) { <span class="keyword">return</span> <span class="literal">false</span> }
+    <span class="keyword">return</span> <span class="literal">true</span>
+};
+
+utils.safemkdir = <span class="keyword">function</span>(directory) {
+    <span class="keyword">try</span> {
+        fs.mkdirSync(directory)
+    } <span class="keyword">catch</span>(e) { <span class="keyword">return</span> <span class="literal">false</span> }
+    <span class="keyword">return</span> <span class="literal">true</span>
+};
+
+<span class="comment">// Works out the most appropriate</span>
+<span class="comment">// parent group to stick the file in</span>
+utils.findParent = <span class="keyword">function</span>(file, parents) {
+    <span class="keyword">var</span> choice
+
+    choice = parents.map(<span class="keyword">function</span>(parent, n) {
+        parent = path.dirname(parent)
+        <span class="keyword">return</span> {
+            dir: path.relative(parent, file)
+            , n: n
+        }
+    }).sort(<span class="keyword">function</span>(a, b) {
+        a = a.dir.match(<span class="regexp">/\.\./g</span>)
+        b = b.dir.match(<span class="regexp">/\.\./g</span>)
+
+        a = a ? a.length : <span class="number">0</span>
+        b = b ? b.length : <span class="number">0</span>
+
+        <span class="keyword">return</span> a - b
+    })[<span class="number">0</span>]
+
+    <span class="keyword">return</span> path.join(choice.n+<span class="string">''</span>, choice.dir)
+};
+
+utils.guessReadme = <span class="keyword">function</span>(filenames) {
+    <span class="keyword">var</span> directories = filenames.map(<span class="keyword">function</span>(filename) {
+        <span class="keyword">return</span> path.resolve(path.dirname(filename))
+    })
+
+    <span class="keyword">var</span> readmes = directories.map(<span class="keyword">function</span>(dir) {
+        <span class="keyword">return</span> fs.readdirSync(dir).filter(<span class="keyword">function</span>(file) {
+            <span class="keyword">return</span> file.match(<span class="regexp">/^readme\.(md|markdown|)$/i</span>)
+        })[<span class="number">0</span>]
+    }).filter(<span class="keyword">function</span>(f) {
+        <span class="keyword">return</span> f
+    })
+
+    <span class="keyword">if</span> (!readmes.length) <span class="keyword">return</span> <span class="literal">false</span>
+
+    <span class="keyword">return</span> path.resolve(path.dirname(filenames[<span class="number">0</span>]), readmes[<span class="number">0</span>])
+};
+
+utils.getModuleVersion = <span class="keyword">function</span>(filename) {
+    <span class="keyword">var</span> dirname = path.dirname(filename)
+      , pkg = path.resolve(dirname, <span class="string">'package.json'</span>)
+      , json
+
+    <span class="keyword">try</span> {
+        json = fs.readFileSync(pkg, <span class="string">'utf8'</span>)
+        json = JSON.parse(json).version
+    } <span class="keyword">catch</span>(e) {
+        <span class="keyword">return</span> <span class="literal">false</span>
+    }
+
+    <span class="keyword">return</span> json
+};
+</code></pre>

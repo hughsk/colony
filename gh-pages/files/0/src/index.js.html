@@ -1,0 +1,286 @@
+<h1>index.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> d3 = require(<span class="string">'d3'</span>)
+  , mousetrap = require(<span class="string">'mousetrap'</span>)
+  , debounce = require(<span class="string">'debounce'</span>)
+  , resize = require(<span class="string">'./resize'</span>)
+
+<span class="keyword">var</span> root = document.getElementById(<span class="string">'colony'</span>)
+  , colony = window.colony
+
+<span class="keyword">var</span> nodes = colony.nodes
+  , links = colony.links
+  , scale = colony.scale
+  , focus
+
+<span class="keyword">var</span> width = <span class="number">600</span>
+  , height = <span class="number">400</span>
+  , link
+  , node
+  , text
+  , textTarget = <span class="literal">false</span>
+
+<span class="keyword">var</span> colors = {
+      links: <span class="string">'FAFAFA'</span>
+    , text: {
+        subtitle: <span class="string">'FAFAFA'</span>
+    }
+    , nodes: {
+        method: <span class="keyword">function</span>(d) {
+            <span class="keyword">return</span> groups[d.group].color
+        }
+        , hover: <span class="string">'FAFAFA'</span>
+        , dep: <span class="string">'252929'</span>
+    }
+}
+
+<span class="keyword">var</span> readme = document.getElementById(<span class="string">'readme-contents'</span>).innerHTML
+
+links.forEach(<span class="keyword">function</span>(link) {
+    <span class="keyword">var</span> source = nodes[link.source]
+      , target = nodes[link.target]
+
+    source.children = source.children || []
+    source.children.push(link.target)
+
+    target.parents = target.parents || []
+    target.parents.push(link.source)
+})
+
+<span class="keyword">var</span> groups = nodes.reduce(<span class="keyword">function</span>(groups, file) {
+    <span class="keyword">var</span> group = file.mgroup || <span class="string">'none'</span>
+      , index = groups.indexOf(group)
+
+    <span class="keyword">if</span> (index === -<span class="number">1</span>) {
+        index = groups.length
+        groups.push(group)
+    }
+
+    file.group = index
+
+    <span class="keyword">return</span> groups
+}, [])
+
+groups = groups.map(<span class="keyword">function</span>(name, n) {
+    <span class="keyword">var</span> color = d3.hsl(n / groups.length * <span class="number">300</span>, <span class="number">0.7</span>, <span class="number">0.725</span>)
+
+    <span class="keyword">return</span> {
+          name: name
+        , color: color.toString()
+    };
+})
+
+<span class="keyword">var</span> force = d3.layout.force()
+    .size([width, height])
+    .charge(-<span class="number">50</span> * colony.scale)
+    .linkDistance(<span class="number">20</span> * colony.scale)
+    .on(<span class="string">'tick'</span>, <span class="keyword">function</span>() {
+        link.attr(<span class="string">'x1'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.source.x; })
+            .attr(<span class="string">'y1'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.source.y; })
+            .attr(<span class="string">'x2'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.target.x; })
+            .attr(<span class="string">'y2'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.target.y; })
+
+        node.attr(<span class="string">'cx'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.x; })
+            .attr(<span class="string">'cy'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.y; })
+
+        <span class="keyword">if</span> (textTarget) {
+            text.attr(<span class="string">'transform'</span>
+                    , <span class="string">'translate('</span> + textTarget.x + <span class="string">','</span> + textTarget.y + <span class="string">')'</span>)
+        }
+    })
+
+<span class="keyword">var</span> vis = d3.select(root)
+    .append(<span class="string">'svg'</span>)
+    .attr(<span class="string">'width'</span>, width)
+    .attr(<span class="string">'height'</span>, height)
+
+force.nodes(nodes)
+     .links(links)
+     .start()
+
+link = vis.selectAll(<span class="string">'line.link'</span>).data(links)
+node = vis.selectAll(<span class="string">'circle.node'</span>)
+    .data(nodes, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.filename })
+
+link.enter()
+    .insert(<span class="string">'line'</span>, <span class="string">'.node'</span>)
+    .attr(<span class="string">'class'</span>, <span class="string">'link'</span>)
+    .attr(<span class="string">'x1'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.source.x; })
+    .attr(<span class="string">'y1'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.source.y; })
+    .attr(<span class="string">'x2'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.target.x; })
+    .attr(<span class="string">'y2'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.target.y; })
+    .style(<span class="string">'stroke'</span>, colors.links)
+    .style(<span class="string">'opacity'</span>, <span class="keyword">function</span>(d) {
+        <span class="keyword">return</span> d.target.module ? <span class="number">0.2</span> : <span class="number">0.3</span>
+    })
+
+node.enter()
+    .append(<span class="string">'circle'</span>)
+    .attr(<span class="string">'class'</span>, <span class="string">'node'</span>)
+    .attr(<span class="string">'cx'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.x })
+    .attr(<span class="string">'cy'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d.y })
+    .attr(<span class="string">'r'</span>, <span class="keyword">function</span>(d) {
+        <span class="keyword">return</span> scale * (d.root ? <span class="number">8</span> : d.module &amp;&amp; !d.native ? <span class="number">5</span> : <span class="number">3</span>)
+    })
+    .style(<span class="string">'fill'</span>, colors.nodes.method)
+    .call(force.drag)
+    .on(<span class="string">'mouseover'</span>, <span class="keyword">function</span>(d) {
+        textTarget = d
+
+        text.attr(<span class="string">'transform'</span>, <span class="string">'translate('</span> + d.x + <span class="string">','</span> + d.y + <span class="string">')'</span>)
+            .text(d.id)
+            .style(<span class="string">'display'</span>, <span class="literal">null</span>)
+
+        d3.select(<span class="keyword">this</span>)
+          .style(<span class="string">'fill'</span>, colors.nodes.hover)
+
+        d3.selectAll(childNodes(d))
+            .style(<span class="string">'fill'</span>, colors.nodes.hover)
+            .style(<span class="string">'stroke'</span>, colors.nodes.method)
+            .style(<span class="string">'stroke-width'</span>, <span class="number">2</span>)
+
+        d3.selectAll(parentNodes(d))
+            .style(<span class="string">'fill'</span>, colors.nodes.dep)
+            .style(<span class="string">'stroke'</span>, colors.nodes.method)
+            .style(<span class="string">'stroke-width'</span>, <span class="number">2</span>)
+    })
+    .on(<span class="string">'mouseout'</span>, <span class="keyword">function</span>(d) {
+        textTarget = <span class="literal">false</span>
+
+        text.style(<span class="string">'display'</span>, <span class="string">'none'</span>)
+
+        d3.select(<span class="keyword">this</span>)
+          .style(<span class="string">'fill'</span>, colors.nodes.method)
+
+        d3.selectAll(childNodes(d))
+            .style(<span class="string">'fill'</span>, colors.nodes.method)
+            .style(<span class="string">'stroke'</span>, <span class="literal">null</span>)
+
+        d3.selectAll(parentNodes(d))
+            .style(<span class="string">'fill'</span>, colors.nodes.method)
+            .style(<span class="string">'stroke'</span>, <span class="literal">null</span>)
+    })
+    .on(<span class="string">'click'</span>, <span class="keyword">function</span>(d) {
+        <span class="keyword">if</span> (focus === d) {
+            force.charge(-<span class="number">50</span> * colony.scale)
+                 .linkDistance(<span class="number">20</span> * colony.scale)
+                 .linkStrength(<span class="number">1</span>)
+                 .start()
+
+            node.style(<span class="string">'opacity'</span>, <span class="number">1</span>)
+            link.style(<span class="string">'opacity'</span>, <span class="keyword">function</span>(d) {
+                <span class="keyword">return</span> d.target.module ? <span class="number">0.2</span> : <span class="number">0.3</span>
+            })
+
+            focus = <span class="literal">false</span>
+
+            d3.select(<span class="string">'#readme-contents'</span>)
+              .html(readme)
+              .classed(<span class="string">'showing-code'</span>, <span class="literal">false</span>)
+
+            <span class="keyword">return</span>
+        }
+
+        focus = d
+
+        d3.xhr(<span class="string">'./files/'</span> + d.filename + <span class="string">'.html'</span>, <span class="keyword">function</span>(res) {
+            <span class="keyword">if</span> (!res) <span class="keyword">return</span>
+
+            d3.select(<span class="string">'#readme-contents'</span>)
+              .html(res.responseText)
+              .classed(<span class="string">'showing-code'</span>, <span class="literal">true</span>)
+
+            document.getElementById(<span class="string">'readme'</span>)
+                    .scrollTop = <span class="number">0</span>
+        })
+
+        node.style(<span class="string">'opacity'</span>, <span class="keyword">function</span>(o) {
+            o.active = connected(d, o)
+            <span class="keyword">return</span> o.active ? <span class="number">1</span> : <span class="number">0.2</span>
+        })
+
+        force.charge(<span class="keyword">function</span>(o) {
+            <span class="keyword">return</span> (o.active ? -<span class="number">100</span> : -<span class="number">5</span>) * colony.scale
+        }).linkDistance(<span class="keyword">function</span>(l) {
+            <span class="keyword">return</span> (l.source.active &amp;&amp; l.target.active ? <span class="number">100</span> : <span class="number">20</span>) * colony.scale
+        }).linkStrength(<span class="keyword">function</span>(l) {
+            <span class="keyword">return</span> (l.source === d || l.target === d ? <span class="number">1</span> : <span class="number">0</span>) * colony.scale
+        }).start()
+
+        link.style(<span class="string">'opacity'</span>, <span class="keyword">function</span>(l, i) {
+            <span class="keyword">return</span> l.source.active &amp;&amp; l.target.active ? <span class="number">0.2</span> : <span class="number">0.02</span>
+        })
+    })
+
+text = vis.selectAll(<span class="string">'.nodetext'</span>)
+    .data([
+          [-<span class="number">1.5</span>,  <span class="number">1.5</span>,  <span class="number">1</span>] <span class="comment">// "Shadows"</span>
+        , [ <span class="number">1.5</span>,  <span class="number">1.5</span>,  <span class="number">1</span>]
+        , [-<span class="number">1.5</span>, -<span class="number">1.5</span>,  <span class="number">1</span>]
+        , [ <span class="number">1.5</span>, -<span class="number">1.5</span>,  <span class="number">1</span>]
+        , [ <span class="number">0.0</span>,  <span class="number">0.0</span>,  <span class="number">0</span>] <span class="comment">// Actual Text</span>
+    ])
+  .enter()
+    .insert(<span class="string">'text'</span>, <span class="string">':last-child'</span>)
+    .attr(<span class="string">'class'</span>, <span class="string">'nodetext'</span>)
+    .classed(<span class="string">'shadow'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d[<span class="number">2</span>] })
+    .attr(<span class="string">'dy'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d[<span class="number">0</span>] - <span class="number">10</span> })
+    .attr(<span class="string">'dx'</span>, <span class="keyword">function</span>(d) { <span class="keyword">return</span> d[<span class="number">1</span>] })
+    .attr(<span class="string">'text-anchor'</span>, <span class="string">'middle'</span>)
+
+<span class="function"><span class="keyword">function</span> <span class="title">refresh</span><span class="params">(e)</span> {</span>
+    width = Math.max(window.innerWidth * <span class="number">0.5</span>, <span class="number">500</span>)
+    height = window.innerHeight
+
+    force.size([width, height])
+         .resume()
+
+    vis.attr(<span class="string">'width'</span>, window.innerWidth)
+       .attr(<span class="string">'height'</span>, height)
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">childNodes</span><span class="params">(d)</span> {</span>
+    <span class="keyword">if</span> (!d.children) <span class="keyword">return</span> []
+
+    <span class="keyword">return</span> d.children
+        .map(<span class="keyword">function</span>(child) {
+            <span class="keyword">return</span> node[<span class="number">0</span>][child]
+        }).filter(<span class="keyword">function</span>(child) {
+            <span class="keyword">return</span> child
+        })
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">parentNodes</span><span class="params">(d)</span> {</span>
+    <span class="keyword">if</span> (!d.parents) <span class="keyword">return</span> []
+
+    <span class="keyword">return</span> d.parents
+        .map(<span class="keyword">function</span>(parent) {
+            <span class="keyword">return</span> node[<span class="number">0</span>][parent]
+        }).filter(<span class="keyword">function</span>(parent) {
+            <span class="keyword">return</span> parent
+        })
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">connected</span><span class="params">(d, o)</span> {</span>
+    <span class="keyword">return</span> o.index === d.index ||
+        (d.children &amp;&amp; d.children.indexOf(o.index) !== -<span class="number">1</span>) ||
+        (o.children &amp;&amp; o.children.indexOf(d.index) !== -<span class="number">1</span>) ||
+        (o.parents &amp;&amp; o.parents.indexOf(d.index) !== -<span class="number">1</span>) ||
+        (d.parents &amp;&amp; d.parents.indexOf(o.index) !== -<span class="number">1</span>)
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">restartForce</span><span class="params">()</span> {</span>
+    <span class="keyword">var</span> theta = force.theta()
+
+    force.start()
+         .theta(theta)
+};
+
+resize(debounce(refresh, <span class="number">500</span>))
+refresh()
+
+mousetrap.bind([<span class="string">'~'</span>, <span class="string">'`'</span>], <span class="keyword">function</span>() {
+    <span class="keyword">var</span> readme = d3.select(<span class="string">'#readme'</span>)
+
+    readme.classed(<span class="string">'enlarged'</span>, !readme.classed(<span class="string">'enlarged'</span>))
+})
+</code></pre>

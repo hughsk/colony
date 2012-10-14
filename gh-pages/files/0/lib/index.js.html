@@ -1,0 +1,259 @@
+<h1>index.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> highlight = require(<span class="string">'highlight.js'</span>).highlight
+  , autohighlight = require(<span class="string">'highlight.js'</span>).highlightAuto
+  , spawn = require(<span class="string">'child_process'</span>).spawn
+  , reqursive = require(<span class="string">'reqursive'</span>)
+  , marked = require(<span class="string">'marked'</span>)
+  , wrench = require(<span class="string">'wrench'</span>)
+  , utils = require(<span class="string">'./utils'</span>)
+  , async = require(<span class="string">'async'</span>)
+  , path = require(<span class="string">'path'</span>)
+  , ejs = require(<span class="string">'ejs'</span>)
+  , fs = require(<span class="string">'fs'</span>)
+
+<span class="keyword">var</span> colony = module.exports = {}
+
+marked.setOptions({
+    gfm: <span class="literal">true</span>,
+    sanitize: <span class="literal">true</span>,
+    pedantic: <span class="literal">false</span>,
+    highlight: <span class="keyword">function</span>(code, lang) {
+        <span class="keyword">if</span> (!lang) <span class="keyword">return</span>
+        <span class="keyword">if</span> (!code) <span class="keyword">return</span> code
+
+        <span class="keyword">if</span> (lang === <span class="string">'js'</span>) {
+            lang = <span class="string">'javascript'</span>
+            <span class="keyword">return</span> highlight(lang, value)
+        }
+
+        <span class="keyword">return</span> autohighlight(code).value
+    }
+})
+
+<span class="comment">/**
+ * Load the required files' data, plus
+ * markdown-formatted readme.
+ * 
+ * @param  {Array|String} filenames One or more filenames to traverse over.
+ * @param  {Object}       options
+ * @param  {Function}     callback
+ */</span>
+colony.generate = <span class="keyword">function</span>(filenames, options, callback) {
+    <span class="keyword">var</span> options = options || {}
+      , callback = callback || <span class="keyword">function</span>(){}
+
+    filenames = Array.isArray(filenames) ? filenames : [filenames]
+
+    options.readme = options.readme ?
+        path.resolve(options.readme) :
+        utils.guessReadme(filenames)
+
+    <span class="keyword">return</span> reqursive(filenames, options, <span class="function"><span class="keyword">function</span> <span class="params">(err, files)</span> {</span>
+        <span class="keyword">if</span> (err) <span class="keyword">return</span> callback(err)
+
+        files.slice(<span class="number">0</span>, filenames.length).forEach(<span class="keyword">function</span>(file) {
+            file.root = <span class="literal">true</span>
+        })
+
+        files = files.filter(<span class="keyword">function</span>(file) {
+            <span class="keyword">return</span> !file.native
+        })
+
+        data = colony.force(files)
+        data.scale = parseFloat(options.scale) || <span class="number">1</span>
+
+        fs.readFile(options.readme || <span class="string">''</span>, <span class="string">'utf8'</span>, <span class="keyword">function</span>(err, readme) {
+            <span class="keyword">var</span> readme = err ? <span class="literal">false</span> : marked(readme)
+
+            callback(<span class="literal">null</span>, {
+                  data: data
+                , readme: readme
+            })
+        })
+    })
+};
+
+<span class="comment">/**
+ * Download one or more NPM modules to a temporary
+ * folder before calling colony.build() on them.
+ * 
+ * @param  {String}   modules  An array of module names to pass to `npm install`
+ * @param  {Object}   options
+ * @param  {Function} callback
+ */</span>
+colony.npm = <span class="keyword">function</span>(modules, options, callback) {
+    <span class="keyword">var</span> moduleFolder = path.resolve(<span class="string">'colony.tmp'</span>)
+      , cwd = process.cwd()
+
+    utils.safemkdir(moduleFolder)
+
+    fs.writeFileSync(path.join(moduleFolder, <span class="string">'package.json'</span>), JSON.stringify({
+          name: <span class="string">'colony-render'</span>
+        , description: <span class="string">'Placeholder for quick install of modules'</span>
+        , private: <span class="literal">true</span>
+    }, <span class="literal">null</span>, <span class="number">2</span>) + <span class="string">'\n'</span>, <span class="string">'utf8'</span>)
+
+    <span class="keyword">var</span> npm = spawn(<span class="string">'npm'</span>, [<span class="string">'install'</span>].concat(modules), {
+          cwd: moduleFolder
+        , env: process.env
+    })
+
+    npm.stdout.pipe(process.stdout, { end: <span class="literal">false</span> })
+    npm.stderr.pipe(process.stderr, { end: <span class="literal">false</span> })
+
+    npm.once(<span class="string">'exit'</span>, <span class="keyword">function</span>(code) {
+        <span class="keyword">if</span> (code !== <span class="number">0</span>) <span class="keyword">return</span> callback(<span class="keyword">new</span> Error(<span class="string">'NPM exited with code '</span> + code))
+
+        modules = fs.readdirSync(path.join(moduleFolder, <span class="string">'node_modules'</span>))
+        modules = modules.filter(<span class="keyword">function</span>(folder) {
+            <span class="keyword">return</span> folder.indexOf(<span class="string">'.'</span>)
+        }).map(<span class="keyword">function</span>(folder) {
+            <span class="keyword">return</span> require.resolve(
+                path.resolve(moduleFolder, <span class="string">'node_modules/'</span> + folder)
+            )
+        })
+
+        modules = modules.concat(options.others || [])
+
+        colony.build(modules, options, <span class="keyword">function</span>(err) {
+            <span class="keyword">if</span> (err) <span class="keyword">return</span> callback(err)
+
+            wrench.rmdirSyncRecursive(moduleFolder, <span class="literal">true</span>)
+
+            <span class="keyword">return</span> callback(<span class="literal">null</span>)
+        })
+    })
+};
+
+<span class="comment">/**
+ * Swaps the results of `reqursive` out for 
+ * a d3-friendly force layout structure.
+ */</span>
+colony.force = <span class="keyword">function</span>(data) {
+    <span class="keyword">var</span> index
+      , links
+      , nodes
+
+    data = data.filter(<span class="keyword">function</span>(file) {
+        <span class="keyword">return</span> file.filename
+    })
+
+    index = data.reduce(<span class="keyword">function</span>(index, file, n) {
+        file.index = n
+        index[file.filename] = file
+        <span class="keyword">return</span> index
+    }, {})
+
+    links = data.reduce(<span class="keyword">function</span>(links, file) {
+
+        file.parents.forEach(<span class="keyword">function</span>(child) {
+            <span class="keyword">if</span> (!index[child]) <span class="keyword">return</span>
+            <span class="keyword">if</span> (<span class="keyword">typeof</span> index[child].index === <span class="string">'undefined'</span>) <span class="keyword">return</span>
+
+            links.push({
+                source: index[child].index,
+                target: file.index
+            })
+        })
+
+        <span class="keyword">return</span> links
+    }, [])
+
+    nodes = data.map(<span class="keyword">function</span>(file) {
+        <span class="keyword">delete</span> file.parents
+        <span class="keyword">return</span> file
+    })
+
+    <span class="keyword">return</span> {
+          nodes: data
+        , links: links
+    };
+};
+
+colony.build = <span class="keyword">function</span>(filenames, options, callback) {
+    <span class="keyword">var</span> options = options || {}
+      , sourcedirs
+
+    <span class="keyword">var</span> templates = {
+          index: ejs.compile(fs.readFileSync(__dirname + <span class="string">'/../views/index.ejs'</span>, <span class="string">'utf8'</span>))
+        , readme: ejs.compile(fs.readFileSync(__dirname + <span class="string">'/../views/readme.ejs'</span>, <span class="string">'utf8'</span>))
+    };
+
+    filenames = Array.isArray(filenames) ? filenames : [filenames]
+
+    options.directory = options.directory || path.resolve(process.cwd(), <span class="string">'colony'</span>)
+    options.filedir   = options.filedir || path.resolve(options.directory, <span class="string">'files'</span>)
+
+    colony.generate(filenames, {
+          traverseModules: options.traverseModules
+        , readme: options.readme
+        , title: options.title
+        , scale: options.scale
+        , absolute: <span class="literal">true</span>
+    }, <span class="keyword">function</span>(err, res) {
+        <span class="keyword">if</span> (err) <span class="keyword">return</span> callback(err)
+
+        <span class="keyword">var</span> index = path.resolve(options.directory, <span class="string">'index.html'</span>)
+
+        utils.safemkdir(options.directory)
+        utils.safemkdir(options.filedir)
+
+        filenames.forEach(<span class="keyword">function</span>(name, i) {
+            utils.safemkdir(path.resolve(options.filedir, i+<span class="string">''</span>))
+        })
+
+        wrench.copyDirSyncRecursive(__dirname + <span class="string">'/../public'</span>, options.directory)
+
+        <span class="keyword">var</span> scripts = res.data.nodes.filter(<span class="keyword">function</span>(file) {
+            <span class="keyword">return</span> file &amp;&amp; file.filename
+        }).map(<span class="keyword">function</span>(file) {
+            <span class="keyword">var</span> source = file.filename
+
+            file.filename = utils.findParent(file.filename, filenames)
+
+            <span class="keyword">return</span> {
+                  source: source
+                , dest: path.resolve(options.filedir, file.filename) + <span class="string">'.html'</span>
+                , id: file.id
+            };
+        });
+
+        <span class="keyword">var</span> html = templates.index({
+              files: res.data
+            , readme: res.readme
+            , title: options.title
+            , fork: options.fork || <span class="string">''</span>
+        })
+
+        fs.writeFileSync(index, html, <span class="string">'utf8'</span>)
+
+        buildScriptPages(scripts, templates.readme, callback)
+    });
+};
+
+<span class="function"><span class="keyword">function</span> <span class="title">buildScriptPages</span><span class="params">(scripts, template, callback)</span> {</span>
+    async.map(scripts, <span class="keyword">function</span>(file, next) {
+        fs.readFile(file.source, <span class="string">'utf8'</span>, <span class="keyword">function</span>(err, contents) {
+            <span class="keyword">if</span> (err) <span class="keyword">return</span> next(<span class="literal">null</span>, <span class="literal">false</span>)
+
+            contents = contents.split(<span class="string">'\n'</span>)
+            <span class="keyword">while</span> (<span class="regexp">/^\s*?$/</span>.test(contents[<span class="number">0</span>])) {
+                contents.shift()
+            }
+            contents = contents.join(<span class="string">'\n'</span>)
+
+            utils.safemkdirp(path.dirname(file.dest))
+
+            contents = <span class="regexp">/\.(js|json)$/gi</span>.test(file.source) ?
+                  highlight(<span class="string">'javascript'</span>, contents).value
+                : autohighlight(contents).value
+
+            contents = template({
+                  name: file.id
+                , contents: contents
+            })
+
+            fs.writeFile(file.dest, contents, <span class="string">'utf8'</span>, next)
+        })
+    }, callback)
+};</code></pre>
