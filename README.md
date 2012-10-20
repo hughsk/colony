@@ -11,6 +11,17 @@ dependencies.
 $ [sudo] npm install -g colony
 ```
 
+## Quick Start
+
+``` bash
+# Install colony and serve
+$ [sudo] npm install -g serve colony
+# Download and visualise "browserify" from NPM
+$ colony --npm browserify && serve colony
+# Open localhost:3000 in your web browser
+$ open http://localhost:3000/
+```
+
 ## Using the Command-Line Interface
 
 ```
