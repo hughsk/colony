@@ -12,7 +12,7 @@
     "browserify": "node_modules/.bin/browserify src/index.js -o public/js/colony.js",
     "minify": "node_modules/.bin/uglifyjs public/js/colony.js > public/js/colony.min.js"
   },
-  "license": "BSD",
+  "license": "MIT",
   "description": "In-browser network graphs representing the links between your Node.js code and its dependencies.",
   "dependencies": {
     "ejs": "~0.8.3",
