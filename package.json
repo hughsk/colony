@@ -1,6 +1,6 @@
 {
   "name": "colony",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.js",
   "bin": {
     "colony": "bin/colony"
