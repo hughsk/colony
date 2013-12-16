@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var colony = require('../index')
+  , path = require('path')
   , optimist = require('optimist')(process.argv.slice(2))
 
 optimist
@@ -37,6 +38,7 @@ optimist
     .describe('h', 'Display this message')
 
 var argv =  optimist.argv
+var moduleFolder = path.resolve('colony.tmp')
 
 function respond() {
     if ((!argv._.length && !argv.npm) || argv.help) {
@@ -44,7 +46,18 @@ function respond() {
     }
 
     if (argv.json) {
-        return colony.generate(argv._, {
+        if (!argv.npm) return printJSON(argv._)
+
+        return colony.npm(argv.npm, {
+            traverseModules: argv.modules
+        }, function(err, folders) {
+            if (err) return finished(err)
+            printJSON((argv._ || []).concat(folders))
+        })
+    }
+
+    function printJSON(folders) {
+        colony.generate(folders, {
             traverseModules: argv.modules
         }, function (err, res) {
             if (err) throw err
@@ -67,7 +80,14 @@ function respond() {
 
         opts.others = argv._ || []
 
-        colony.npm(argv.npm, opts, finished)
+        colony.npm(argv.npm, opts, function(err, folders) {
+            if (err) return finished(err)
+            colony.build(folders, opts, function(err) {
+                if (err) return finished(err)
+                require('wrench').rmdirSyncRecursive(moduleFolder, true)
+                return finished(null)
+            })
+        })
     } else
     if (argv._.length) {
         colony.build(argv._, opts, finished)
